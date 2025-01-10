@@ -6,7 +6,7 @@ from random import randint, uniform
 class Cat(pygame.sprite.Sprite):
     def __init__(self, groups):
         super().__init__(groups)
-        self.image = pygame.image.load(join('CatShooter', 'images', 'pink_cat.png')).convert_alpha()
+        self.image = pygame.image.load(join('img/pink_cat.png')).convert_alpha()
         self.rect = self.image.get_rect(bottomright = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
         self.direction = pygame.Vector2()
         self.speed = 500  # pixels per second
@@ -126,22 +126,22 @@ def collisions():
 pygame.init()
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption("Cat Shooter")
-pygame.display.set_icon(pygame.image.load('CatShooter/images/cat_icon.png'))  # To change the window icon
+pygame.display.set_caption("Meow-nster Shooter")
+pygame.display.set_icon(pygame.image.load('img/cat_icon.png'))  # To change the window icon
 running = True
 clock = pygame.time.Clock()
 
 # Import
-yarn_surf = pygame.image.load(join('CatShooter', 'images', 'star.png')).convert_alpha()
-monster_surf = pygame.image.load(join('CatShooter', 'images', 'enemy.png')).convert_alpha()
-meow_surf = pygame.image.load(join('CatShooter', 'images', 'laser.png')).convert_alpha()
-font = pygame.font.Font(join('CatShooter', 'images', 'CatFont-Bold.ttf'), 40)
-paw_frames = [pygame.image.load(join('CatShooter', 'images', 'explosion', f'{i}.png')).convert_alpha() for i in range(21)]
+yarn_surf = pygame.image.load(join('img/star.png')).convert_alpha()
+monster_surf = pygame.image.load(join('img/enemy.png')).convert_alpha()
+meow_surf = pygame.image.load(join('img/laser.png')).convert_alpha()
+font = pygame.font.Font(join('img/CatFont-Bold.ttf'), 40)
+paw_frames = [pygame.image.load(join('img/explosion', f'{i}.png')).convert_alpha() for i in range(21)]
 
-meow_sound = pygame.mixer.Sound(join('CatShooter', 'audio', 'sword.mp3'))
+meow_sound = pygame.mixer.Sound(join('audio/sword.mp3'))
 meow_sound.set_volume(0.5) # volume
-paw_sound = pygame.mixer.Sound(join('CatShooter', 'audio', 'kill.mp3'))
-game_music = pygame.mixer.Sound(join('CatShooter', 'audio', 'music.mp3'))
+paw_sound = pygame.mixer.Sound(join('audio/kill.mp3'))
+game_music = pygame.mixer.Sound(join('audio/music.mp3'))
 game_music.set_volume(0.4)
 game_music.play(-1)  # Play the game music indefinitely
 
