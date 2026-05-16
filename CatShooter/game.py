@@ -99,6 +99,11 @@ class AnimatedPaw(pygame.sprite.Sprite):
 
 score = 0
 game_over = False
+game_start_time = pygame.time.get_ticks()
+
+def get_spawn_interval():
+    elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
+    return max(150, int(500 - elapsed * 5))
 
 def update_score():
     global score
@@ -128,9 +133,10 @@ def draw_game_over():
     display_surface.blit(hint_surf, hint_rect)
 
 def reset_game():
-    global score, game_over
+    global score, game_over, game_start_time
     score = 0
     game_over = False
+    game_start_time = pygame.time.get_ticks()
     all_sprites.empty()
     meow_sprites.empty()
     monster_sprites.empty()
@@ -203,6 +209,7 @@ while running:
         if not game_over:
             if event.type == MONSTER_SPAWN_EVENT:
                 Monster(monster_surf, (randint(50, WINDOW_WIDTH - 50), -50), (all_sprites, monster_sprites))
+                pygame.time.set_timer(MONSTER_SPAWN_EVENT, get_spawn_interval())
         else:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_r]:
