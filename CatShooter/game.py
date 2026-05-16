@@ -97,30 +97,59 @@ class AnimatedPaw(pygame.sprite.Sprite):
         else:
             self.kill()  # Remove the paw animation once it's done
 
-# Add score variable
-score = 0  # Initialize the score to zero
+score = 0
+game_over = False
 
 def update_score():
     global score
-    score += 1  # Increment the score by 1
-    
+    score += 1
+
 def display_score():
-    text_surf = font.render(f'Score: {score}', True, (240, 240, 240))  # Display the score
+    text_surf = font.render(f'Score: {score}', True, (240, 240, 240))
     text_rect = text_surf.get_rect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
     display_surface.blit(text_surf, text_rect)
-    pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 16).move(0, -8), 5, 10 )
+    pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 16).move(0, -8), 5, 10)
+
+def draw_game_over():
+    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 160))
+    display_surface.blit(overlay, (0, 0))
+
+    title_surf = font.render('GAME OVER', True, (255, 80, 80))
+    title_rect = title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 60))
+    display_surface.blit(title_surf, title_rect)
+
+    score_surf = font.render(f'Score: {score}', True, (240, 240, 240))
+    score_rect = score_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
+    display_surface.blit(score_surf, score_rect)
+
+    hint_surf = font.render('Press R to Restart or Q to Quit', True, (180, 180, 180))
+    hint_rect = hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 60))
+    display_surface.blit(hint_surf, hint_rect)
+
+def reset_game():
+    global score, game_over
+    score = 0
+    game_over = False
+    all_sprites.empty()
+    meow_sprites.empty()
+    monster_sprites.empty()
+    yarn_sprites.empty()
+    for _ in range(20):
+        Yarn((all_sprites, yarn_sprites), yarn_surf)
+    return Cat(all_sprites)
 
 def collisions():
-    global running 
+    global game_over
     collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
-    if collision_sprites:  # If a collision occurs with a monster
-        running = False
-        
+    if collision_sprites:
+        game_over = True
+
     for meow in meow_sprites:
         collided_sprites = pygame.sprite.spritecollide(meow, monster_sprites, True)
-        if collided_sprites:  # If a collision occurs with a monster
+        if collided_sprites:
             meow.kill()
-            update_score()  # Increase the score when a monster is hit
+            update_score()
             AnimatedPaw(paw_frames, meow.rect.midtop, all_sprites)
             paw_sound.play()
             
@@ -162,30 +191,36 @@ for _ in range(20):
 
 # Monster spawn event
 MONSTER_SPAWN_EVENT = pygame.USEREVENT + 1
-pygame.time.set_timer(MONSTER_SPAWN_EVENT, 500)  # Every half second
+pygame.time.set_timer(MONSTER_SPAWN_EVENT, 500)
 
 # Game loop
 while running:
-    dt = clock.tick(60) / 1000  # Delta time in seconds
-    
-    # Event handling
+    dt = clock.tick(60) / 1000
+
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
-        if event.type == MONSTER_SPAWN_EVENT:
-            Monster(monster_surf, (randint(50, WINDOW_WIDTH - 50), -50), (all_sprites, monster_sprites))
-    
-    # Update
-    all_sprites.update(dt)
-    
-    # Check collisions
-    collisions()
-    
-    # Drawing
-    display_surface.fill((30, 30, 30))  # Background color
+        if not game_over:
+            if event.type == MONSTER_SPAWN_EVENT:
+                Monster(monster_surf, (randint(50, WINDOW_WIDTH - 50), -50), (all_sprites, monster_sprites))
+        else:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_r]:
+                cat = reset_game()
+            if keys[pygame.K_q]:
+                running = False
+
+    if not game_over:
+        all_sprites.update(dt)
+        collisions()
+
+    display_surface.fill((30, 30, 30))
     all_sprites.draw(display_surface)
-    display_score()  # Draw the score on the screen
+    display_score()
+
+    if game_over:
+        draw_game_over()
+
     pygame.display.update()
 
-# Quit the game
 pygame.quit()
