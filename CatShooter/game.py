@@ -98,6 +98,7 @@ class AnimatedPaw(pygame.sprite.Sprite):
             self.kill()  # Remove the paw animation once it's done
 
 score = 0
+high_score = 0
 lives = 3
 game_over = False
 game_start_time = pygame.time.get_ticks()
@@ -134,8 +135,12 @@ def draw_game_over():
     score_rect = score_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
     display_surface.blit(score_surf, score_rect)
 
+    hs_surf = font.render(f'Best: {high_score}', True, (255, 215, 0))
+    hs_rect = hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50))
+    display_surface.blit(hs_surf, hs_rect)
+
     hint_surf = font.render('Press R to Restart or Q to Quit', True, (180, 180, 180))
-    hint_rect = hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 60))
+    hint_rect = hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 110))
     display_surface.blit(hint_surf, hint_rect)
 
 def reset_game():
@@ -153,12 +158,14 @@ def reset_game():
     return Cat(all_sprites)
 
 def collisions():
-    global game_over, lives
+    global game_over, lives, high_score
     collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
     if collision_sprites:
         lives -= 1
         if lives <= 0:
             game_over = True
+            if score > high_score:
+                high_score = score
 
     for meow in meow_sprites:
         collided_sprites = pygame.sprite.spritecollide(meow, monster_sprites, True)
