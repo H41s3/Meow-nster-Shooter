@@ -1,12 +1,14 @@
 import pygame
 from pygame.locals import *
-from os.path import join
+from os.path import join, dirname, abspath
 from random import randint, uniform
+
+BASE_DIR = dirname(abspath(__file__))
 
 class Cat(pygame.sprite.Sprite):
     def __init__(self, groups):
         super().__init__(groups)
-        self.image = pygame.image.load(join('img/pink_cat.png')).convert_alpha()
+        self.image = pygame.image.load(join(BASE_DIR, 'images/pink_cat.png')).convert_alpha()
         self.rect = self.image.get_rect(bottomright = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
         self.direction = pygame.Vector2()
         self.speed = 500  # pixels per second
@@ -32,8 +34,7 @@ class Cat(pygame.sprite.Sprite):
         self.direction = self.direction.normalize() if self.direction else self.direction
         self.rect.center += self.direction * self.speed * dt
         
-        recent_keys = pygame.key.get_pressed()
-        if recent_keys[pygame.K_SPACE] and self.can_shoot:
+        if keys[pygame.K_SPACE] and self.can_shoot:
             Meow(meow_surf, self.rect.midtop, (all_sprites, meow_sprites))
             self.can_shoot = False
             self.meow_shoot_time = pygame.time.get_ticks()
@@ -52,10 +53,10 @@ class Meow(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = surf
         self.rect = self.image.get_rect(midbottom = pos)
-        self.speed = 100
-        
+        self.speed = 400
+
     def update(self, dt):
-        self.rect.centery -= 400 * dt
+        self.rect.centery -= self.speed * dt
         if self.rect.bottom < 0:
             self.kill()
     
@@ -127,21 +128,21 @@ pygame.init()
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Meow-nster Shooter")
-pygame.display.set_icon(pygame.image.load('img/cat_icon.png'))  # To change the window icon
+pygame.display.set_icon(pygame.image.load(join(BASE_DIR, 'images/cat_icon.png')))
 running = True
 clock = pygame.time.Clock()
 
 # Import
-yarn_surf = pygame.image.load(join('img/star.png')).convert_alpha()
-monster_surf = pygame.image.load(join('img/enemy.png')).convert_alpha()
-meow_surf = pygame.image.load(join('img/laser.png')).convert_alpha()
-font = pygame.font.Font(join('img/CatFont-Bold.ttf'), 40)
-paw_frames = [pygame.image.load(join('img/explosion', f'{i}.png')).convert_alpha() for i in range(21)]
+yarn_surf = pygame.image.load(join(BASE_DIR, 'images/star.png')).convert_alpha()
+monster_surf = pygame.image.load(join(BASE_DIR, 'images/enemy.png')).convert_alpha()
+meow_surf = pygame.image.load(join(BASE_DIR, 'images/laser.png')).convert_alpha()
+font = pygame.font.Font(join(BASE_DIR, 'images/CatFont-Bold.ttf'), 40)
+paw_frames = [pygame.image.load(join(BASE_DIR, 'images/explosion', f'{i}.png')).convert_alpha() for i in range(21)]
 
-meow_sound = pygame.mixer.Sound(join('audio/sword.mp3'))
-meow_sound.set_volume(0.5) # volume
-paw_sound = pygame.mixer.Sound(join('audio/kill.mp3'))
-game_music = pygame.mixer.Sound(join('audio/music.mp3'))
+meow_sound = pygame.mixer.Sound(join(BASE_DIR, 'audio/sword.mp3'))
+meow_sound.set_volume(0.5)
+paw_sound = pygame.mixer.Sound(join(BASE_DIR, 'audio/kill.mp3'))
+game_music = pygame.mixer.Sound(join(BASE_DIR, 'audio/music.mp3'))
 game_music.set_volume(0.4)
 game_music.play(-1)  # Play the game music indefinitely
 
