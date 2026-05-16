@@ -33,7 +33,8 @@ class Cat(pygame.sprite.Sprite):
         self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
         self.direction = self.direction.normalize() if self.direction else self.direction
         self.rect.center += self.direction * self.speed * dt
-        
+        self.rect.clamp_ip(pygame.Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT))
+
         if keys[pygame.K_SPACE] and self.can_shoot:
             Meow(meow_surf, self.rect.midtop, (all_sprites, meow_sprites))
             self.can_shoot = False
