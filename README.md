@@ -1,23 +1,42 @@
-# 🐱 Meow-nster-Shooter
+# Meow-nster Shooter
 
+A fast-paced 2D arcade shooter where you control a cat battling waves of monsters. Survive as long as you can, rack up points, and beat your high score.
 
-**Cat Shooter** is a fast-paced, 2D arcade shooter where you control a cute cat battling against waves of monsters. Use your laser power to defeat enemies, rack up points, and survive for as long as you can!
+## Features
 
+- **Player Movement** — Arrow keys, with full screen-boundary clamping
+- **Laser Shooting** — Spacebar with cooldown system
+- **Lives System** — Start with 3 lives; lose one per monster hit
+- **Difficulty Scaling** — Monster spawn rate increases over time
+- **Score System** — Earn points for each monster defeated
+- **Session High Score** — Tracks your best score across restarts
+- **Game Over Screen** — Shows final score, best score, and restart option
+- **Animated Explosions** — Paw explosion animation on monster kills
+- **Sound & Music** — Background music and sound effects
 
-## 🎮 Game Features
-- **Playable Cat Character**: Control a cat and shoot lasers at the incoming monsters.
-- **Monster Enemies**: Avoid and shoot down monsters to protect the cat.
-- **Laser Meows**: Shoot lasers with a cooldown system to avoid overheating.
-- **Score System**: Earn points for each defeated monster.
-- **Sound & Music**: Background music and sound effects add to the immersive experience.
-- **Animated Explosions**: Unique explosions when monsters are hit.
+## Controls
 
-## 🛠️ Installation
+| Key | Action |
+|---|---|
+| Arrow Keys | Move cat |
+| Space | Shoot |
+| R | Restart (on game over screen) |
+| Q | Quit (on game over screen) |
+
+## Installation
 
 ### Prerequisites
-Ensure that Python and Pygame are installed on your system.
 
-1. **Python**: Download and install Python from [here](https://www.python.org/downloads/).
-2. **Pygame**: Install Pygame via pip:
-   ```bash
-   pip install pygame
+- Python 3.8+
+- pygame
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run
+
+```bash
+cd CatShooter
+python game.py
+```
