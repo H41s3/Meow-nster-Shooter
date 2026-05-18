@@ -175,6 +175,7 @@ high_score = load_high_score()
 lives = 3
 game_over = False
 paused = False
+on_start_screen = True
 muted = False
 shake_timer = 0
 combo = 0
@@ -215,6 +216,19 @@ def display_mute():
     if muted:
         mute_surf = font.render('MUTED', True, (180, 180, 180))
         display_surface.blit(mute_surf, mute_surf.get_rect(topright=(WINDOW_WIDTH - 20, 20)))
+
+def draw_start_screen():
+    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 180))
+    display_surface.blit(overlay, (0, 0))
+    title_surf = font.render('MEOW-NSTER SHOOTER', True, (255, 160, 80))
+    display_surface.blit(title_surf, title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 80)))
+    hs_surf = font.render(f'Best Score: {high_score}', True, (255, 215, 0))
+    display_surface.blit(hs_surf, hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)))
+    hint_surf = font.render('Press SPACE to Play', True, (200, 200, 200))
+    display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 70)))
+    mute_hint = font.render('M = Mute   P = Pause', True, (140, 140, 140))
+    display_surface.blit(mute_hint, mute_hint.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 130)))
 
 def draw_paused():
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -345,9 +359,13 @@ while running:
         if event.type == KEYDOWN and event.key == pygame.K_m:
             muted = not muted
             pygame.mixer.pause() if muted else pygame.mixer.unpause()
-        if event.type == KEYDOWN and event.key == pygame.K_p and not game_over:
+        if on_start_screen:
+            if event.type == KEYDOWN and event.key == pygame.K_SPACE:
+                on_start_screen = False
+                game_start_time = pygame.time.get_ticks()
+        if event.type == KEYDOWN and event.key == pygame.K_p and not game_over and not on_start_screen:
             paused = not paused
-        if not game_over and not paused:
+        if not game_over and not paused and not on_start_screen:
             if event.type == MONSTER_SPAWN_EVENT:
                 elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
                 pos = (randint(50, WINDOW_WIDTH - 50), -50)
@@ -370,7 +388,7 @@ while running:
         cat.cooldown_duration = 400
         rapid_fire_timer = 0
 
-    if not game_over and not paused:
+    if not game_over and not paused and not on_start_screen:
         all_sprites.update(dt)
         collisions()
 
@@ -392,9 +410,11 @@ while running:
     display_combo()
     display_mute()
 
-    if paused:
+    if on_start_screen:
+        draw_start_screen()
+    elif paused:
         draw_paused()
-    if game_over:
+    elif game_over:
         draw_game_over()
 
     pygame.display.update()
