@@ -212,10 +212,19 @@ def display_score():
     display_surface.blit(text_surf, text_rect)
     pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 16).move(0, -8), 5, 10)
 
+def draw_heart(surface, x, y, size, filled):
+    color = (220, 60, 80) if filled else (80, 40, 50)
+    r = size // 4
+    pygame.draw.circle(surface, color, (x + r, y + r), r)
+    pygame.draw.circle(surface, color, (x + size - r, y + r), r)
+    points = [(x, y + r), (x + size // 2, y + size), (x + size, y + r)]
+    pygame.draw.polygon(surface, color, points)
+
 def display_lives():
-    lives_surf = font.render(f'Lives: {lives}', True, (255, 160, 160))
-    lives_rect = lives_surf.get_rect(topleft=(20, 20))
-    display_surface.blit(lives_surf, lives_rect)
+    size = 36
+    gap = 10
+    for i in range(3):
+        draw_heart(display_surface, 20 + i * (size + gap), 20, size, i < lives)
 
 def display_kills():
     kills_surf = font.render(f'Kills: {kills}', True, (160, 220, 160))
