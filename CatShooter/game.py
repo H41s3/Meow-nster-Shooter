@@ -138,6 +138,7 @@ lives = 3
 game_over = False
 paused = False
 muted = False
+shake_timer = 0
 game_start_time = pygame.time.get_ticks()
 
 def get_spawn_interval():
@@ -209,11 +210,12 @@ def reset_game():
     return Cat(all_sprites)
 
 def collisions():
-    global game_over, lives, high_score
+    global game_over, lives, high_score, shake_timer
     if not cat.invincible:
         collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
         if collision_sprites:
             cat.hit()
+            shake_timer = 300
             lives -= 1
             if lives <= 0:
                 game_over = True
@@ -296,8 +298,19 @@ while running:
         all_sprites.update(dt)
         collisions()
 
+    if shake_timer > 0:
+        shake_timer = max(0, shake_timer - dt * 1000)
+        shake_x = randint(-8, 8)
+        shake_y = randint(-8, 8)
+    else:
+        shake_x = shake_y = 0
+
     display_surface.fill((30, 30, 30))
-    all_sprites.draw(display_surface)
+    game_surf = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+    game_surf.fill((30, 30, 30))
+    for sprite in all_sprites:
+        game_surf.blit(sprite.image, sprite.rect)
+    display_surface.blit(game_surf, (shake_x, shake_y))
     display_score()
     display_lives()
     display_mute()
