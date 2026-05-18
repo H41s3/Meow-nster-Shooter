@@ -115,6 +115,7 @@ score = 0
 high_score = load_high_score()
 lives = 3
 game_over = False
+muted = False
 game_start_time = pygame.time.get_ticks()
 
 def get_spawn_interval():
@@ -135,6 +136,11 @@ def display_lives():
     lives_surf = font.render(f'Lives: {lives}', True, (255, 160, 160))
     lives_rect = lives_surf.get_rect(topleft=(20, 20))
     display_surface.blit(lives_surf, lives_rect)
+
+def display_mute():
+    if muted:
+        mute_surf = font.render('MUTED', True, (180, 180, 180))
+        display_surface.blit(mute_surf, mute_surf.get_rect(topright=(WINDOW_WIDTH - 20, 20)))
 
 def draw_game_over():
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -237,6 +243,9 @@ while running:
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
+        if event.type == KEYDOWN and event.key == pygame.K_m:
+            muted = not muted
+            pygame.mixer.pause() if muted else pygame.mixer.unpause()
         if not game_over:
             if event.type == MONSTER_SPAWN_EVENT:
                 Monster(monster_surf, (randint(50, WINDOW_WIDTH - 50), -50), (all_sprites, monster_sprites))
@@ -256,6 +265,7 @@ while running:
     all_sprites.draw(display_surface)
     display_score()
     display_lives()
+    display_mute()
 
     if game_over:
         draw_game_over()
