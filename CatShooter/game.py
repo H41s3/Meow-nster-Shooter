@@ -139,6 +139,9 @@ game_over = False
 paused = False
 muted = False
 shake_timer = 0
+combo = 0
+combo_timer = 0
+COMBO_WINDOW = 2000
 game_start_time = pygame.time.get_ticks()
 
 def get_spawn_interval():
@@ -146,8 +149,11 @@ def get_spawn_interval():
     return max(150, int(500 - elapsed * 5))
 
 def update_score():
-    global score
-    score += 1
+    global score, combo, combo_timer
+    combo += 1
+    combo_timer = pygame.time.get_ticks()
+    multiplier = min(combo, 5)
+    score += multiplier
 
 def display_score():
     text_surf = font.render(f'Score: {score}', True, (240, 240, 240))
@@ -159,6 +165,12 @@ def display_lives():
     lives_surf = font.render(f'Lives: {lives}', True, (255, 160, 160))
     lives_rect = lives_surf.get_rect(topleft=(20, 20))
     display_surface.blit(lives_surf, lives_rect)
+
+def display_combo():
+    if combo >= 2:
+        color = (255, 215, 0) if combo < 5 else (255, 80, 80)
+        combo_surf = font.render(f'x{min(combo, 5)} COMBO!', True, color)
+        display_surface.blit(combo_surf, combo_surf.get_rect(midtop=(WINDOW_WIDTH / 2, 20)))
 
 def display_mute():
     if muted:
@@ -196,10 +208,12 @@ def draw_game_over():
     display_surface.blit(hint_surf, hint_rect)
 
 def reset_game():
-    global score, lives, game_over, game_start_time
+    global score, lives, game_over, game_start_time, combo, combo_timer
     score = 0
     lives = 3
     game_over = False
+    combo = 0
+    combo_timer = 0
     game_start_time = pygame.time.get_ticks()
     all_sprites.empty()
     meow_sprites.empty()
@@ -294,6 +308,9 @@ while running:
             if keys[pygame.K_q]:
                 running = False
 
+    if combo > 0 and pygame.time.get_ticks() - combo_timer > COMBO_WINDOW:
+        combo = 0
+
     if not game_over and not paused:
         all_sprites.update(dt)
         collisions()
@@ -313,6 +330,7 @@ while running:
     display_surface.blit(game_surf, (shake_x, shake_y))
     display_score()
     display_lives()
+    display_combo()
     display_mute()
 
     if paused:
