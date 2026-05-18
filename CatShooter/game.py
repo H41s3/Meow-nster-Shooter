@@ -94,10 +94,11 @@ class Monster(pygame.sprite.Sprite):
         self.start_time = pygame.time.get_ticks()
         self.lifetime = 3000
         self.direction = pygame.Vector2(uniform(-0.5, 0.5), 1)
-        self.speed = randint(400, 500)
+        lo, hi = DIFFICULTY_SETTINGS[difficulty]['speed_range']
+        self.speed = randint(lo, hi)
         self.rotation_speed = randint(40, 80)
         self.rotation = 0
-        
+
     def update(self, dt):
         self.rect.center += self.direction * self.speed * dt
         if pygame.time.get_ticks() - self.start_time >= self.lifetime:
@@ -178,6 +179,12 @@ kills = 0
 game_over = False
 paused = False
 on_start_screen = True
+difficulty = 'Normal'
+DIFFICULTY_SETTINGS = {
+    'Easy':   {'spawn_base': 700, 'spawn_min': 300, 'speed_range': (250, 350)},
+    'Normal': {'spawn_base': 500, 'spawn_min': 150, 'speed_range': (400, 500)},
+    'Hard':   {'spawn_base': 300, 'spawn_min': 80,  'speed_range': (500, 700)},
+}
 muted = False
 shake_timer = 0
 combo = 0
@@ -187,8 +194,9 @@ rapid_fire_timer = 0
 game_start_time = pygame.time.get_ticks()
 
 def get_spawn_interval():
+    s = DIFFICULTY_SETTINGS[difficulty]
     elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
-    return max(150, int(500 - elapsed * 5))
+    return max(s['spawn_min'], int(s['spawn_base'] - elapsed * 5))
 
 def update_score(base=1):
     global score, combo, combo_timer, kills
@@ -229,13 +237,16 @@ def draw_start_screen():
     overlay.fill((0, 0, 0, 180))
     display_surface.blit(overlay, (0, 0))
     title_surf = font.render('MEOW-NSTER SHOOTER', True, (255, 160, 80))
-    display_surface.blit(title_surf, title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 80)))
+    display_surface.blit(title_surf, title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 100)))
     hs_surf = font.render(f'Best Score: {high_score}', True, (255, 215, 0))
-    display_surface.blit(hs_surf, hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)))
+    display_surface.blit(hs_surf, hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 30)))
+    diff_color = {'Easy': (80, 220, 80), 'Normal': (240, 240, 80), 'Hard': (255, 80, 80)}[difficulty]
+    diff_surf = font.render(f'Difficulty: {difficulty}  (D to change)', True, diff_color)
+    display_surface.blit(diff_surf, diff_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 40)))
     hint_surf = font.render('Press SPACE to Play', True, (200, 200, 200))
-    display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 70)))
+    display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 110)))
     mute_hint = font.render('M = Mute   P = Pause', True, (140, 140, 140))
-    display_surface.blit(mute_hint, mute_hint.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 130)))
+    display_surface.blit(mute_hint, mute_hint.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 160)))
 
 def draw_paused():
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -383,6 +394,9 @@ while running:
             if event.type == KEYDOWN and event.key == pygame.K_SPACE:
                 on_start_screen = False
                 game_start_time = pygame.time.get_ticks()
+            if event.type == KEYDOWN and event.key == pygame.K_d:
+                diff_list = list(DIFFICULTY_SETTINGS.keys())
+                difficulty = diff_list[(diff_list.index(difficulty) + 1) % len(diff_list)]
         if event.type == KEYDOWN and event.key == pygame.K_p and not game_over and not on_start_screen:
             paused = not paused
         if not game_over and not paused and not on_start_screen:
