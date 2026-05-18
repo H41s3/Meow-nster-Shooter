@@ -173,6 +173,7 @@ def save_high_score(value):
 score = 0
 high_score = load_high_score()
 lives = 3
+kills = 0
 game_over = False
 paused = False
 on_start_screen = True
@@ -189,7 +190,8 @@ def get_spawn_interval():
     return max(150, int(500 - elapsed * 5))
 
 def update_score(base=1):
-    global score, combo, combo_timer
+    global score, combo, combo_timer, kills
+    kills += 1
     combo += 1
     combo_timer = pygame.time.get_ticks()
     multiplier = min(combo, 5)
@@ -205,6 +207,10 @@ def display_lives():
     lives_surf = font.render(f'Lives: {lives}', True, (255, 160, 160))
     lives_rect = lives_surf.get_rect(topleft=(20, 20))
     display_surface.blit(lives_surf, lives_rect)
+
+def display_kills():
+    kills_surf = font.render(f'Kills: {kills}', True, (160, 220, 160))
+    display_surface.blit(kills_surf, kills_surf.get_rect(topright=(WINDOW_WIDTH - 20, 60)))
 
 def display_combo():
     if combo >= 2:
@@ -261,9 +267,10 @@ def draw_game_over():
     display_surface.blit(hint_surf, hint_rect)
 
 def reset_game():
-    global score, lives, game_over, game_start_time, combo, combo_timer, rapid_fire_timer
+    global score, lives, kills, game_over, game_start_time, combo, combo_timer, rapid_fire_timer
     score = 0
     lives = 3
+    kills = 0
     game_over = False
     combo = 0
     combo_timer = 0
@@ -407,6 +414,7 @@ while running:
     display_surface.blit(game_surf, (shake_x, shake_y))
     display_score()
     display_lives()
+    display_kills()
     display_combo()
     display_mute()
 
