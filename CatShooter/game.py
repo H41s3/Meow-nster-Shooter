@@ -4,6 +4,7 @@ from os.path import join, dirname, abspath
 from random import randint, uniform
 import json
 import os
+import numpy as np
 
 BASE_DIR = dirname(abspath(__file__))
 
@@ -292,6 +293,7 @@ def collisions():
         if collision_sprites:
             cat.hit()
             shake_timer = 300
+            hit_sound.play()
             lives -= 1
             if lives <= 0:
                 game_over = True
@@ -335,6 +337,17 @@ meow_sound = pygame.mixer.Sound(join(BASE_DIR, 'audio/sword.mp3'))
 meow_sound.set_volume(0.5)
 paw_sound = pygame.mixer.Sound(join(BASE_DIR, 'audio/kill.mp3'))
 game_music = pygame.mixer.Sound(join(BASE_DIR, 'audio/music.mp3'))
+
+def make_hit_sound():
+    sample_rate = 44100
+    duration = 0.15
+    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+    wave = (np.sin(2 * np.pi * 180 * t) * 0.4 * np.exp(-t * 20)).astype(np.float32)
+    stereo = np.column_stack([wave, wave])
+    sound = pygame.sndarray.make_sound((stereo * 32767).astype(np.int16))
+    return sound
+
+hit_sound = make_hit_sound()
 game_music.set_volume(0.4)
 game_music.play(-1)  # Play the game music indefinitely
 
