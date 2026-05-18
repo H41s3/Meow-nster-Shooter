@@ -2,6 +2,8 @@ import pygame
 from pygame.locals import *
 from os.path import join, dirname, abspath
 from random import randint, uniform
+import json
+import os
 
 BASE_DIR = dirname(abspath(__file__))
 
@@ -97,8 +99,20 @@ class AnimatedPaw(pygame.sprite.Sprite):
         else:
             self.kill()  # Remove the paw animation once it's done
 
+SAVE_FILE = join(BASE_DIR, 'save_data.json')
+
+def load_high_score():
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, 'r') as f:
+            return json.load(f).get('high_score', 0)
+    return 0
+
+def save_high_score(value):
+    with open(SAVE_FILE, 'w') as f:
+        json.dump({'high_score': value}, f)
+
 score = 0
-high_score = 0
+high_score = load_high_score()
 lives = 3
 game_over = False
 game_start_time = pygame.time.get_ticks()
@@ -166,6 +180,7 @@ def collisions():
             game_over = True
             if score > high_score:
                 high_score = score
+                save_high_score(high_score)
 
     for meow in meow_sprites:
         collided_sprites = pygame.sprite.spritecollide(meow, monster_sprites, True)
