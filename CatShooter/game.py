@@ -115,6 +115,7 @@ score = 0
 high_score = load_high_score()
 lives = 3
 game_over = False
+paused = False
 muted = False
 game_start_time = pygame.time.get_ticks()
 
@@ -141,6 +142,15 @@ def display_mute():
     if muted:
         mute_surf = font.render('MUTED', True, (180, 180, 180))
         display_surface.blit(mute_surf, mute_surf.get_rect(topright=(WINDOW_WIDTH - 20, 20)))
+
+def draw_paused():
+    overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 120))
+    display_surface.blit(overlay, (0, 0))
+    pause_surf = font.render('PAUSED', True, (240, 240, 240))
+    display_surface.blit(pause_surf, pause_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)))
+    hint_surf = font.render('Press P to Resume', True, (180, 180, 180))
+    display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 60)))
 
 def draw_game_over():
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -246,7 +256,9 @@ while running:
         if event.type == KEYDOWN and event.key == pygame.K_m:
             muted = not muted
             pygame.mixer.pause() if muted else pygame.mixer.unpause()
-        if not game_over:
+        if event.type == KEYDOWN and event.key == pygame.K_p and not game_over:
+            paused = not paused
+        if not game_over and not paused:
             if event.type == MONSTER_SPAWN_EVENT:
                 Monster(monster_surf, (randint(50, WINDOW_WIDTH - 50), -50), (all_sprites, monster_sprites))
                 pygame.time.set_timer(MONSTER_SPAWN_EVENT, get_spawn_interval())
@@ -257,7 +269,7 @@ while running:
             if keys[pygame.K_q]:
                 running = False
 
-    if not game_over:
+    if not game_over and not paused:
         all_sprites.update(dt)
         collisions()
 
@@ -267,6 +279,8 @@ while running:
     display_lives()
     display_mute()
 
+    if paused:
+        draw_paused()
     if game_over:
         draw_game_over()
 
