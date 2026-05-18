@@ -105,6 +105,31 @@ class Monster(pygame.sprite.Sprite):
         self.image = pygame.transform.rotozoom(self.original_surf, self.rotation, 1)
         self.rect = self.image.get_rect(center = self.rect.center)
     
+class FastMonster(pygame.sprite.Sprite):
+    def __init__(self, surf, pos, groups):
+        super().__init__(groups)
+        tinted = surf.copy()
+        tinted.fill((255, 60, 60, 180), special_flags=pygame.BLEND_RGBA_MULT)
+        self.original_surf = tinted
+        self.image = tinted
+        self.rect = self.image.get_rect(center=pos)
+        self.start_time = pygame.time.get_ticks()
+        self.lifetime = 4000
+        self.direction = pygame.Vector2(uniform(-0.5, 0.5), 1)
+        self.speed = randint(700, 900)
+        self.rotation_speed = randint(100, 150)
+        self.rotation = 0
+        self.score_value = 3
+        self.mask = pygame.mask.from_surface(self.image)
+
+    def update(self, dt):
+        self.rect.center += self.direction * self.speed * dt
+        if pygame.time.get_ticks() - self.start_time >= self.lifetime:
+            self.kill()
+        self.rotation += self.rotation_speed * dt
+        self.image = pygame.transform.rotozoom(self.original_surf, self.rotation, 1)
+        self.rect = self.image.get_rect(center=self.rect.center)
+
 class PowerUp(pygame.sprite.Sprite):
     def __init__(self, pos, groups):
         super().__init__(groups)
@@ -162,12 +187,12 @@ def get_spawn_interval():
     elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
     return max(150, int(500 - elapsed * 5))
 
-def update_score():
+def update_score(base=1):
     global score, combo, combo_timer
     combo += 1
     combo_timer = pygame.time.get_ticks()
     multiplier = min(combo, 5)
-    score += multiplier
+    score += base * multiplier
 
 def display_score():
     text_surf = font.render(f'Score: {score}', True, (240, 240, 240))
@@ -257,7 +282,8 @@ def collisions():
         collided_sprites = pygame.sprite.spritecollide(meow, monster_sprites, True)
         if collided_sprites:
             meow.kill()
-            update_score()
+            base = sum(getattr(m, 'score_value', 1) for m in collided_sprites)
+            update_score(base)
             AnimatedPaw(paw_frames, meow.rect.midtop, all_sprites)
             paw_sound.play()
             if randint(1, 5) == 1:
@@ -323,7 +349,12 @@ while running:
             paused = not paused
         if not game_over and not paused:
             if event.type == MONSTER_SPAWN_EVENT:
-                Monster(monster_surf, (randint(50, WINDOW_WIDTH - 50), -50), (all_sprites, monster_sprites))
+                elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
+                pos = (randint(50, WINDOW_WIDTH - 50), -50)
+                if elapsed > 30 and randint(1, 4) == 1:
+                    FastMonster(monster_surf, pos, (all_sprites, monster_sprites))
+                else:
+                    Monster(monster_surf, pos, (all_sprites, monster_sprites))
                 pygame.time.set_timer(MONSTER_SPAWN_EVENT, get_spawn_interval())
         else:
             keys = pygame.key.get_pressed()
