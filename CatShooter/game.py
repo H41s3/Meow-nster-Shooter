@@ -105,6 +105,19 @@ class Monster(pygame.sprite.Sprite):
         self.image = pygame.transform.rotozoom(self.original_surf, self.rotation, 1)
         self.rect = self.image.get_rect(center = self.rect.center)
     
+class PowerUp(pygame.sprite.Sprite):
+    def __init__(self, pos, groups):
+        super().__init__(groups)
+        self.image = pygame.Surface((20, 20), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, (80, 220, 255), (10, 10), 10)
+        self.rect = self.image.get_rect(center=pos)
+        self.speed = 150
+
+    def update(self, dt):
+        self.rect.y += int(self.speed * dt)
+        if self.rect.top > WINDOW_HEIGHT:
+            self.kill()
+
 class AnimatedPaw(pygame.sprite.Sprite):
     def __init__(self, frames, pos, groups):
         super().__init__(groups)
@@ -142,6 +155,7 @@ shake_timer = 0
 combo = 0
 combo_timer = 0
 COMBO_WINDOW = 2000
+rapid_fire_timer = 0
 game_start_time = pygame.time.get_ticks()
 
 def get_spawn_interval():
@@ -208,23 +222,25 @@ def draw_game_over():
     display_surface.blit(hint_surf, hint_rect)
 
 def reset_game():
-    global score, lives, game_over, game_start_time, combo, combo_timer
+    global score, lives, game_over, game_start_time, combo, combo_timer, rapid_fire_timer
     score = 0
     lives = 3
     game_over = False
     combo = 0
     combo_timer = 0
+    rapid_fire_timer = 0
     game_start_time = pygame.time.get_ticks()
     all_sprites.empty()
     meow_sprites.empty()
     monster_sprites.empty()
     yarn_sprites.empty()
+    powerup_sprites.empty()
     for _ in range(20):
         Yarn((all_sprites, yarn_sprites), yarn_surf)
     return Cat(all_sprites)
 
 def collisions():
-    global game_over, lives, high_score, shake_timer
+    global game_over, lives, high_score, shake_timer, rapid_fire_timer
     if not cat.invincible:
         collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
         if collision_sprites:
@@ -244,6 +260,13 @@ def collisions():
             update_score()
             AnimatedPaw(paw_frames, meow.rect.midtop, all_sprites)
             paw_sound.play()
+            if randint(1, 5) == 1:
+                PowerUp(meow.rect.midtop, (all_sprites, powerup_sprites))
+
+    picked = pygame.sprite.spritecollide(cat, powerup_sprites, True)
+    if picked:
+        cat.cooldown_duration = 100
+        rapid_fire_timer = pygame.time.get_ticks()
             
 # General setup
 pygame.init()
@@ -273,6 +296,7 @@ all_sprites = pygame.sprite.Group()
 yarn_sprites = pygame.sprite.Group()
 meow_sprites = pygame.sprite.Group()
 monster_sprites = pygame.sprite.Group()
+powerup_sprites = pygame.sprite.Group()
 
 # Player
 cat = Cat(all_sprites)
@@ -310,6 +334,10 @@ while running:
 
     if combo > 0 and pygame.time.get_ticks() - combo_timer > COMBO_WINDOW:
         combo = 0
+
+    if rapid_fire_timer > 0 and pygame.time.get_ticks() - rapid_fire_timer > 5000:
+        cat.cooldown_duration = 400
+        rapid_fire_timer = 0
 
     if not game_over and not paused:
         all_sprites.update(dt)
