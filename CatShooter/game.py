@@ -19,7 +19,13 @@ class Cat(pygame.sprite.Sprite):
         self.can_shoot = True
         self.meow_shoot_time = 0
         self.cooldown_duration = 400
-        
+
+        # Invincibility frames
+        self.invincible = False
+        self.invincible_start = 0
+        self.invincible_duration = 1500
+        self.original_image = self.image.copy()
+
         # Mask
         self.mask = pygame.mask.from_surface(self.image)
         
@@ -28,7 +34,21 @@ class Cat(pygame.sprite.Sprite):
             current_time = pygame.time.get_ticks()
             if current_time - self.meow_shoot_time >= self.cooldown_duration:
                 self.can_shoot = True
-        
+
+    def hit(self):
+        self.invincible = True
+        self.invincible_start = pygame.time.get_ticks()
+
+    def invincibility_timer(self):
+        if self.invincible:
+            now = pygame.time.get_ticks()
+            if now - self.invincible_start >= self.invincible_duration:
+                self.invincible = False
+                self.image = self.original_image
+            else:
+                visible = (now // 100) % 2 == 0
+                self.image = self.original_image if visible else pygame.Surface(self.original_image.get_size(), pygame.SRCALPHA)
+
     def update(self, dt):
         keys = pygame.key.get_pressed()
         self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
@@ -43,7 +63,8 @@ class Cat(pygame.sprite.Sprite):
             self.meow_shoot_time = pygame.time.get_ticks()
             meow_sound.play()
             
-        self.meow_timer()  # Call the meow timer function
+        self.meow_timer()
+        self.invincibility_timer()
         
 class Yarn(pygame.sprite.Sprite):
     def __init__(self, groups, surf):
@@ -189,14 +210,16 @@ def reset_game():
 
 def collisions():
     global game_over, lives, high_score
-    collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
-    if collision_sprites:
-        lives -= 1
-        if lives <= 0:
-            game_over = True
-            if score > high_score:
-                high_score = score
-                save_high_score(high_score)
+    if not cat.invincible:
+        collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
+        if collision_sprites:
+            cat.hit()
+            lives -= 1
+            if lives <= 0:
+                game_over = True
+                if score > high_score:
+                    high_score = score
+                    save_high_score(high_score)
 
     for meow in meow_sprites:
         collided_sprites = pygame.sprite.spritecollide(meow, monster_sprites, True)
