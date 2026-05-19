@@ -170,15 +170,31 @@ class Yarn(pygame.sprite.Sprite):
         # Place each yarn ball at a random position anywhere on screen.
         self.rect = self.image.get_rect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
 
+# ---------------------------------------------------------------------------
+# Meow — the projectile fired by the player
+# ---------------------------------------------------------------------------
+
 class Meow(pygame.sprite.Sprite):
+    """
+    A bullet fired upward from the cat's position when the player presses SPACE.
+
+    Each Meow travels straight up at a fixed speed.  If it leaves the top of
+    the screen without hitting anything it is automatically removed to free
+    memory.  Collision with monsters is handled externally in collisions().
+    """
+
     def __init__(self, surf, pos, groups):
         super().__init__(groups)
         self.image = surf
+        # Align the bottom-centre of the bullet sprite with the cat's midtop
+        # so it appears to fire from the cat's mouth.
         self.rect = self.image.get_rect(midbottom = pos)
-        self.speed = 400
+        self.speed = 400   # pixels per second, upward
 
     def update(self, dt):
+        # Move upward — subtracting from centery moves toward the top of the screen.
         self.rect.centery -= self.speed * dt
+        # Destroy the sprite once it is fully off the top edge.
         if self.rect.bottom < 0:
             self.kill()
     
