@@ -151,10 +151,23 @@ class Cat(pygame.sprite.Sprite):
         self.meow_timer()
         self.invincibility_timer()
         
+# ---------------------------------------------------------------------------
+# Yarn — decorative background stars / yarn balls
+# ---------------------------------------------------------------------------
+
 class Yarn(pygame.sprite.Sprite):
+    """
+    A static decorative sprite scattered across the background.
+
+    Yarn sprites don't move or interact with anything — they exist purely
+    to give the background visual depth and thematic personality.  Twenty
+    instances are created at startup and again on every game reset.
+    """
+
     def __init__(self, groups, surf):
         super().__init__(groups)
         self.image = surf
+        # Place each yarn ball at a random position anywhere on screen.
         self.rect = self.image.get_rect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
 
 class Meow(pygame.sprite.Sprite):
