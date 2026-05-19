@@ -198,26 +198,54 @@ class Meow(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
     
+# ---------------------------------------------------------------------------
+# Monster — the standard falling enemy
+# ---------------------------------------------------------------------------
+
 class Monster(pygame.sprite.Sprite):
+    """
+    The most common enemy type.  Monsters spawn above the visible screen and
+    drift downward with a slight random horizontal drift, spinning as they fall.
+
+    Key characteristics:
+        - Speed is randomly chosen within the range defined by the current
+          difficulty setting, so harder modes produce faster monsters.
+        - Each monster has a maximum lifetime of 3 seconds; if the player has
+          not destroyed it by then it self-destructs (no penalty to the player).
+        - Rotation is purely cosmetic — it has no effect on the hitbox.
+        - Score value defaults to 1 (see update_score).
+    """
+
     def __init__(self, surf, pos, groups):
         super().__init__(groups)
+        # Keep a reference to the original (un-rotated) surface so we can
+        # re-apply a clean rotation every frame without quality loss.
         self.original_surf = surf
         self.image = surf
         self.rect = self.image.get_rect(center = pos)
         self.start_time = pygame.time.get_ticks()
-        self.lifetime = 3000
+        self.lifetime = 3000   # milliseconds before self-destruct
+
+        # Slight random horizontal drift (±0.5) combined with a downward component (1)
+        # gives each monster a unique falling trajectory.
         self.direction = pygame.Vector2(uniform(-0.5, 0.5), 1)
         lo, hi = DIFFICULTY_SETTINGS[difficulty]['speed_range']
-        self.speed = randint(lo, hi)
-        self.rotation_speed = randint(40, 80)
-        self.rotation = 0
+        self.speed = randint(lo, hi)     # pixels per second, drawn from difficulty table
+        self.rotation_speed = randint(40, 80)   # degrees per second
+        self.rotation = 0                        # current accumulated rotation in degrees
 
     def update(self, dt):
         self.rect.center += self.direction * self.speed * dt
+
+        # Remove after lifetime expires — prevents the screen filling with stale monsters.
         if pygame.time.get_ticks() - self.start_time >= self.lifetime:
             self.kill()
+
+        # Rotate the sprite.  rotozoom recreates the surface each frame, so we always
+        # rotate from the pristine original_surf to avoid cumulative blur artifacts.
         self.rotation += self.rotation_speed * dt
         self.image = pygame.transform.rotozoom(self.original_surf, self.rotation, 1)
+        # Re-centre the rect because rotating changes the surface dimensions.
         self.rect = self.image.get_rect(center = self.rect.center)
     
 class FastMonster(pygame.sprite.Sprite):
