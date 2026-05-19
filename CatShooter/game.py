@@ -38,64 +38,116 @@ import json                                      # Serialize / deserialize save 
 import os                                        # File existence checks
 import numpy as np                               # Procedural audio generation for the hit sound
 
+# Absolute path to the directory containing this file.  All asset paths are
+# constructed relative to this so the game works regardless of where the user
+# launches Python from.
 BASE_DIR = dirname(abspath(__file__))
 
+
+# ---------------------------------------------------------------------------
+# Player sprite — the pink cat the user controls
+# ---------------------------------------------------------------------------
+
 class Cat(pygame.sprite.Sprite):
+    """
+    The player-controlled character.
+
+    Responsibilities:
+        - Read keyboard input each frame and move accordingly (arrow keys).
+        - Fire a Meow projectile when SPACE is pressed, subject to a cooldown.
+        - Flash / become temporarily invincible for 1.5 s after taking a hit,
+          preventing multiple rapid hits from a single enemy pass.
+    """
+
     def __init__(self, groups):
         super().__init__(groups)
+
+        # Load the cat sprite image with transparency support (convert_alpha
+        # preserves the PNG alpha channel so the background is see-through).
         self.image = pygame.image.load(join(BASE_DIR, 'images/pink_cat.png')).convert_alpha()
         self.rect = self.image.get_rect(bottomright = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
+
+        # Movement — direction is a normalised 2D vector set each frame from
+        # key state; multiplied by speed * dt to get frame-rate-independent movement.
         self.direction = pygame.Vector2()
         self.speed = 500  # pixels per second
-        
-        # Cool down
+
+        # Shooting cooldown — prevents holding SPACE from firing every single frame.
         self.can_shoot = True
         self.meow_shoot_time = 0
-        self.cooldown_duration = 400
+        self.cooldown_duration = 400      # milliseconds between shots (default)
 
-        # Invincibility frames
+        # Invincibility frames — after a hit the cat blinks and cannot be hurt again
+        # for invincible_duration milliseconds, giving the player time to move away.
         self.invincible = False
         self.invincible_start = 0
-        self.invincible_duration = 1500
-        self.original_image = self.image.copy()
+        self.invincible_duration = 1500   # 1.5 seconds of post-hit protection
+        self.original_image = self.image.copy()   # saved so we can restore after blink
 
-        # Mask
+        # Pixel-perfect collision mask built from the sprite's alpha channel.
+        # Using a mask instead of rectangle overlap prevents "near misses" from
+        # being counted as hits.
         self.mask = pygame.mask.from_surface(self.image)
-        
+
     def meow_timer(self):
+        """Re-enable shooting once the cooldown period has elapsed."""
         if not self.can_shoot:
             current_time = pygame.time.get_ticks()
             if current_time - self.meow_shoot_time >= self.cooldown_duration:
                 self.can_shoot = True
 
     def hit(self):
+        """Called by the collision system when the cat is struck by an enemy."""
         self.invincible = True
         self.invincible_start = pygame.time.get_ticks()
 
     def invincibility_timer(self):
+        """
+        Handle the post-hit invincibility blink effect.
+
+        The cat's sprite alternates between visible and invisible every 100 ms
+        to give a classic arcade 'flashing' visual cue.  After invincible_duration
+        the cat returns to full visibility and can be hurt again.
+        """
         if self.invincible:
             now = pygame.time.get_ticks()
             if now - self.invincible_start >= self.invincible_duration:
+                # Invincibility window over — restore the sprite and re-enable damage.
                 self.invincible = False
                 self.image = self.original_image
             else:
+                # Toggle visibility based on whether the current 100 ms slot is even/odd.
                 visible = (now // 100) % 2 == 0
                 self.image = self.original_image if visible else pygame.Surface(self.original_image.get_size(), pygame.SRCALPHA)
 
     def update(self, dt):
+        """
+        Called once per frame by the sprite group.
+
+        dt (float): seconds elapsed since the last frame.  Multiplying velocity
+        by dt makes movement speed independent of frame rate.
+        """
         keys = pygame.key.get_pressed()
+
+        # Build a direction vector from held arrow keys.
+        # Subtracting LEFT from RIGHT gives -1, 0, or +1 for the X axis, same for Y.
         self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
         self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
+
+        # Normalise diagonal movement so holding two keys doesn't move faster than one.
         self.direction = self.direction.normalize() if self.direction else self.direction
         self.rect.center += self.direction * self.speed * dt
+
+        # Keep the cat inside the window boundaries.
         self.rect.clamp_ip(pygame.Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT))
 
         if keys[pygame.K_SPACE] and self.can_shoot:
+            # Spawn a projectile at the cat's nose (midtop of the sprite rect).
             Meow(meow_surf, self.rect.midtop, (all_sprites, meow_sprites))
             self.can_shoot = False
             self.meow_shoot_time = pygame.time.get_ticks()
             meow_sound.play()
-            
+
         self.meow_timer()
         self.invincibility_timer()
         
