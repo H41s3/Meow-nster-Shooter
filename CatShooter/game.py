@@ -330,20 +330,37 @@ class PowerUp(pygame.sprite.Sprite):
         if self.rect.top > WINDOW_HEIGHT:
             self.kill()
 
+# ---------------------------------------------------------------------------
+# AnimatedPaw — hit/kill particle effect
+# ---------------------------------------------------------------------------
+
 class AnimatedPaw(pygame.sprite.Sprite):
+    """
+    A one-shot sprite animation that plays at the point where a bullet
+    destroys a monster.
+
+    The animation is made up of 21 pre-loaded frames (images/explosion/0–20.png).
+    Each frame is shown for ~1/20th of a second based on the dt-accumulating
+    frame_index counter.  The sprite destroys itself automatically when the
+    last frame has been displayed, so there is no manual cleanup required.
+    """
+
     def __init__(self, frames, pos, groups):
         super().__init__(groups)
-        self.frames = frames
-        self.frame_index = 0
-        self.image = self.frames[self.frame_index]
+        self.frames = frames          # list of pre-loaded pygame.Surface objects
+        self.frame_index = 0.0        # float so we can accumulate sub-frame time via dt
+        self.image = self.frames[0]
         self.rect = self.image.get_rect(center = pos)
-        
+
     def update(self, dt):
+        # Advance the frame counter.  At 20 frames/second this plays the full
+        # 21-frame animation in just over one second.
         self.frame_index += 20 * dt
         if self.frame_index < len(self.frames):
             self.image = self.frames[int(self.frame_index)]
         else:
-            self.kill()  # Remove the paw animation once it's done
+            # Animation complete — remove this sprite from all groups.
+            self.kill()
 
 SAVE_FILE = join(BASE_DIR, 'save_data.json')
 
