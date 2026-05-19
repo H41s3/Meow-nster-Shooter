@@ -447,17 +447,43 @@ rapid_fire_timer = 0         # Timestamp when rapid-fire was activated; 0 = inac
 # ---------------------------------------------------------------------------
 game_start_time = pygame.time.get_ticks()
 
+# ---------------------------------------------------------------------------
+# Gameplay helper functions — spawn pacing and scoring
+# ---------------------------------------------------------------------------
+
 def get_spawn_interval():
+    """
+    Calculate the current delay (ms) between monster spawns.
+
+    The interval starts at spawn_base and decreases by 5 ms for every second
+    of play, creating a natural difficulty ramp-up as the session progresses.
+    It never drops below spawn_min so the game remains playable even very late.
+
+    Returns:
+        int: milliseconds to wait before the next monster spawn.
+    """
     s = DIFFICULTY_SETTINGS[difficulty]
-    elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
+    elapsed = (pygame.time.get_ticks() - game_start_time) / 1000   # seconds played
     return max(s['spawn_min'], int(s['spawn_base'] - elapsed * 5))
 
+
 def update_score(base=1):
+    """
+    Award points for a kill, applying the active combo multiplier.
+
+    The combo multiplier grows with each consecutive kill made within
+    COMBO_WINDOW milliseconds of the previous kill, capped at 5×.
+    FastMonsters pass base=3 so they are inherently worth more points
+    even at the same multiplier level.
+
+    Args:
+        base (int): base point value of the killed enemy (default 1).
+    """
     global score, combo, combo_timer, kills
     kills += 1
     combo += 1
-    combo_timer = pygame.time.get_ticks()
-    multiplier = min(combo, 5)
+    combo_timer = pygame.time.get_ticks()    # reset the combo window
+    multiplier = min(combo, 5)               # hard cap at 5×
     score += base * multiplier
 
 def display_score():
