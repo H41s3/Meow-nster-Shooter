@@ -395,25 +395,56 @@ def save_high_score(value):
     with open(SAVE_FILE, 'w') as f:
         json.dump({'high_score': value}, f)
 
-score = 0
-high_score = load_high_score()
-lives = 3
-kills = 0
-game_over = False
-paused = False
-on_start_screen = True
-difficulty = 'Normal'
+# ---------------------------------------------------------------------------
+# Global game state
+# ---------------------------------------------------------------------------
+# These variables track the live state of a single play-through.  They are
+# reset by reset_game() whenever the player restarts after a game-over.
+
+score = 0                    # Points accumulated this run
+high_score = load_high_score()  # All-time best, loaded from disk at startup
+lives = 3                    # Remaining lives (displayed as hearts in the HUD)
+kills = 0                    # Total enemies destroyed this run
+game_over = False            # True once the player loses their last life
+paused = False               # True while the game is suspended (P key)
+on_start_screen = True       # True until the player presses SPACE for the first time
+
+# ---------------------------------------------------------------------------
+# Difficulty settings
+# ---------------------------------------------------------------------------
+difficulty = 'Normal'        # Active difficulty; cycled with D on the start screen
+
+# Each difficulty level defines:
+#   spawn_base  : starting interval between monster spawns (ms)
+#   spawn_min   : the floor — spawning never gets faster than this
+#   speed_range : (lo, hi) pixels/sec from which each monster's speed is drawn
 DIFFICULTY_SETTINGS = {
     'Easy':   {'spawn_base': 700, 'spawn_min': 300, 'speed_range': (250, 350)},
     'Normal': {'spawn_base': 500, 'spawn_min': 150, 'speed_range': (400, 500)},
     'Hard':   {'spawn_base': 300, 'spawn_min': 80,  'speed_range': (500, 700)},
 }
-muted = False
-shake_timer = 0
-combo = 0
-combo_timer = 0
-COMBO_WINDOW = 2000
-rapid_fire_timer = 0
+
+# ---------------------------------------------------------------------------
+# Audio / visual effect state
+# ---------------------------------------------------------------------------
+muted = False                # Whether the player has silenced all audio (M key)
+shake_timer = 0              # Milliseconds of screen-shake remaining after a hit
+
+# ---------------------------------------------------------------------------
+# Combo multiplier state
+# ---------------------------------------------------------------------------
+combo = 0                    # Number of kills within the current combo window
+combo_timer = 0              # Timestamp of the most recent kill (pygame ticks)
+COMBO_WINDOW = 2000          # ms — kill within this window to extend the combo
+
+# ---------------------------------------------------------------------------
+# Power-up state
+# ---------------------------------------------------------------------------
+rapid_fire_timer = 0         # Timestamp when rapid-fire was activated; 0 = inactive
+
+# ---------------------------------------------------------------------------
+# Session timer — used to scale spawn speed over time
+# ---------------------------------------------------------------------------
 game_start_time = pygame.time.get_ticks()
 
 def get_spawn_interval():
