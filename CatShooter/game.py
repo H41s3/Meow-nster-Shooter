@@ -362,15 +362,36 @@ class AnimatedPaw(pygame.sprite.Sprite):
             # Animation complete — remove this sprite from all groups.
             self.kill()
 
+# ---------------------------------------------------------------------------
+# Persistence — save and load the high score between sessions
+# ---------------------------------------------------------------------------
+
+# Path to the JSON file that stores the player's all-time high score.
+# Stored next to game.py so it travels with the game folder.
 SAVE_FILE = join(BASE_DIR, 'save_data.json')
 
+
 def load_high_score():
+    """
+    Return the stored high score, or 0 if no save file exists yet.
+
+    The save file is a simple JSON object:  {"high_score": <int>}
+    Using .get() with a default of 0 handles the case where the key is absent
+    (e.g. an older save file from a previous version of the game).
+    """
     if os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, 'r') as f:
             return json.load(f).get('high_score', 0)
     return 0
 
+
 def save_high_score(value):
+    """
+    Overwrite the save file with the new high score.
+
+    Called only when the player beats the existing record, so unnecessary
+    disk writes are avoided during normal gameplay.
+    """
     with open(SAVE_FILE, 'w') as f:
         json.dump({'high_score': value}, f)
 
