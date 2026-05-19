@@ -248,21 +248,42 @@ class Monster(pygame.sprite.Sprite):
         # Re-centre the rect because rotating changes the surface dimensions.
         self.rect = self.image.get_rect(center = self.rect.center)
     
+# ---------------------------------------------------------------------------
+# FastMonster — the elite, high-value enemy variant
+# ---------------------------------------------------------------------------
+
 class FastMonster(pygame.sprite.Sprite):
+    """
+    A harder, faster variant of the standard Monster that appears after 30 s.
+
+    Differences from Monster:
+        - Tinted red so the player can instantly recognise it as a threat.
+        - Speed is always 700–900 px/s (hardcoded, not difficulty-dependent)
+          because it is already an elite enemy reserved for the late game.
+        - Spins significantly faster (100–150°/s vs 40–80°/s).
+        - Worth 3 points instead of 1, rewarding the player for the extra effort.
+        - Has a pixel-perfect collision mask, matching the Cat class.
+    """
+
     def __init__(self, surf, pos, groups):
         super().__init__(groups)
+
+        # Apply a red tint by multiplying the surface's RGBA channels.
+        # BLEND_RGBA_MULT scales each channel by the supplied colour, darkening
+        # everything except the red channel to produce a red-shifted enemy.
         tinted = surf.copy()
         tinted.fill((255, 60, 60, 180), special_flags=pygame.BLEND_RGBA_MULT)
         self.original_surf = tinted
         self.image = tinted
         self.rect = self.image.get_rect(center=pos)
         self.start_time = pygame.time.get_ticks()
-        self.lifetime = 4000
+        self.lifetime = 4000   # 4 s — slightly more time than a normal monster
+
         self.direction = pygame.Vector2(uniform(-0.5, 0.5), 1)
-        self.speed = randint(700, 900)
-        self.rotation_speed = randint(100, 150)
+        self.speed = randint(700, 900)           # significantly faster than normal monsters
+        self.rotation_speed = randint(100, 150)  # faster spin to signal danger visually
         self.rotation = 0
-        self.score_value = 3
+        self.score_value = 3                     # triple score reward
         self.mask = pygame.mask.from_surface(self.image)
 
     def update(self, dt):
