@@ -294,16 +294,39 @@ class FastMonster(pygame.sprite.Sprite):
         self.image = pygame.transform.rotozoom(self.original_surf, self.rotation, 1)
         self.rect = self.image.get_rect(center=self.rect.center)
 
+# ---------------------------------------------------------------------------
+# PowerUp — temporary rapid-fire collectible
+# ---------------------------------------------------------------------------
+
 class PowerUp(pygame.sprite.Sprite):
+    """
+    A collectible orb that grants the cat a 5-second rapid-fire boost.
+
+    Spawning:
+        There is a 1-in-5 chance that a PowerUp drops at a killed monster's
+        position (see collisions()).  This keeps them rare enough to feel
+        rewarding without being a reliable crutch.
+
+    Effect:
+        When the cat touches the orb, cooldown_duration drops from 400 ms to
+        100 ms for 5 seconds (handled in the main loop via rapid_fire_timer).
+
+    Visual:
+        A small cyan circle drawn procedurally — no external image asset needed.
+        It drifts downward at 150 px/s and despawns if the player misses it.
+    """
+
     def __init__(self, pos, groups):
         super().__init__(groups)
+        # Draw a filled cyan circle onto a transparent surface.
         self.image = pygame.Surface((20, 20), pygame.SRCALPHA)
         pygame.draw.circle(self.image, (80, 220, 255), (10, 10), 10)
         self.rect = self.image.get_rect(center=pos)
-        self.speed = 150
+        self.speed = 150   # pixels per second, downward
 
     def update(self, dt):
         self.rect.y += int(self.speed * dt)
+        # Remove if it scrolls off the bottom of the screen uncollected.
         if self.rect.top > WINDOW_HEIGHT:
             self.kill()
 
