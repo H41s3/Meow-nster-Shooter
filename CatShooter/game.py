@@ -1,10 +1,42 @@
+"""
+Meow-nster Shooter
+==================
+A 2D arcade-style top-down shooter built with Pygame.
+
+The player controls a cat that fires projectiles ("meows") upward to destroy
+falling monsters. The game features three difficulty levels, a combo multiplier
+scoring system, random power-ups, screen-shake on damage, and persistent
+high-score saving between sessions.
+
+How to run:
+    python game.py
+
+Required dependencies (see requirements.txt):
+    - pygame  : game framework for rendering, input, audio, and sprite management
+    - numpy   : used to procedurally generate the hit-damage sound effect
+
+Architecture overview:
+    - All interactive objects (cat, enemies, bullets, etc.) are Pygame Sprites
+      collected into named Sprite Groups for efficient batch updates and collision
+      detection.
+    - Game state (score, lives, difficulty, combo) is stored as module-level
+      globals, kept simple for a single-file project of this scope.
+    - The main game loop runs at a capped 60 FPS and is responsible for event
+      handling, state updates, collision resolution, and rendering each frame.
+    - Persistent data (high score only) is saved to save_data.json next to this
+      file using Python's built-in json module.
+"""
+
+# ---------------------------------------------------------------------------
+# Standard library & third-party imports
+# ---------------------------------------------------------------------------
 import pygame
-from pygame.locals import *
-from os.path import join, dirname, abspath
-from random import randint, uniform
-import json
-import os
-import numpy as np
+from pygame.locals import *                      # Exposes QUIT, KEYDOWN, etc. as bare names
+from os.path import join, dirname, abspath       # Cross-platform path helpers
+from random import randint, uniform              # Used for enemy spawn positions and speeds
+import json                                      # Serialize / deserialize save data
+import os                                        # File existence checks
+import numpy as np                               # Procedural audio generation for the hit sound
 
 BASE_DIR = dirname(abspath(__file__))
 
