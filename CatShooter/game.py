@@ -734,57 +734,96 @@ def collisions():
         cat.cooldown_duration = 100        # 100 ms cooldown = ~10 shots/second
         rapid_fire_timer = pygame.time.get_ticks()
             
-# General setup
+# ===========================================================================
+# One-time initialisation — runs once when the module is first executed
+# ===========================================================================
+
+# Initialise all Pygame sub-systems (display, audio, input, etc.).
 pygame.init()
+
+# Window dimensions.  1280 × 720 is standard HD and fits most laptop screens.
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Meow-nster Shooter")
 pygame.display.set_icon(pygame.image.load(join(BASE_DIR, 'images/cat_icon.png')))
-running = True
+
+running = True          # Set to False to exit the main loop cleanly
 clock = pygame.time.Clock()
 
-# Import
-yarn_surf = pygame.image.load(join(BASE_DIR, 'images/star.png')).convert_alpha()
-monster_surf = pygame.image.load(join(BASE_DIR, 'images/enemy.png')).convert_alpha()
-meow_surf = pygame.image.load(join(BASE_DIR, 'images/laser.png')).convert_alpha()
-font = pygame.font.Font(join(BASE_DIR, 'images/CatFont-Bold.ttf'), 40)
-paw_frames = [pygame.image.load(join(BASE_DIR, 'images/explosion', f'{i}.png')).convert_alpha() for i in range(21)]
+# ---------------------------------------------------------------------------
+# Asset loading — images, fonts, and audio
+# All assets use convert_alpha() so Pygame stores them in the fastest format
+# for blitting with transparency, which matters at 60 FPS.
+# ---------------------------------------------------------------------------
 
+yarn_surf    = pygame.image.load(join(BASE_DIR, 'images/star.png')).convert_alpha()
+monster_surf = pygame.image.load(join(BASE_DIR, 'images/enemy.png')).convert_alpha()
+meow_surf    = pygame.image.load(join(BASE_DIR, 'images/laser.png')).convert_alpha()
+font         = pygame.font.Font(join(BASE_DIR, 'images/CatFont-Bold.ttf'), 40)
+
+# Pre-load all 21 explosion frames into a list so AnimatedPaw can index them
+# directly without triggering disk I/O during gameplay.
+paw_frames = [
+    pygame.image.load(join(BASE_DIR, 'images/explosion', f'{i}.png')).convert_alpha()
+    for i in range(21)
+]
+
+# Audio assets loaded as Sound objects (not music streams) for low-latency playback.
 meow_sound = pygame.mixer.Sound(join(BASE_DIR, 'audio/sword.mp3'))
 meow_sound.set_volume(0.5)
-paw_sound = pygame.mixer.Sound(join(BASE_DIR, 'audio/kill.mp3'))
+paw_sound  = pygame.mixer.Sound(join(BASE_DIR, 'audio/kill.mp3'))
 game_music = pygame.mixer.Sound(join(BASE_DIR, 'audio/music.mp3'))
 
+
 def make_hit_sound():
+    """
+    Procedurally generate the short thud played when the cat takes damage.
+
+    Uses numpy to synthesise a 150 ms sine wave at 180 Hz with an exponential
+    decay envelope — a low 'thump' that communicates a hit without being harsh.
+    The wave is duplicated into stereo (two channels) and converted to 16-bit
+    PCM integers that Pygame's sound system expects.
+
+    Generating this in code avoids shipping an extra audio file for a sound
+    that is trivially described mathematically.
+    """
     sample_rate = 44100
-    duration = 0.15
-    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-    wave = (np.sin(2 * np.pi * 180 * t) * 0.4 * np.exp(-t * 20)).astype(np.float32)
+    duration    = 0.15
+    t     = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+    wave  = (np.sin(2 * np.pi * 180 * t) * 0.4 * np.exp(-t * 20)).astype(np.float32)
     stereo = np.column_stack([wave, wave])
-    sound = pygame.sndarray.make_sound((stereo * 32767).astype(np.int16))
-    return sound
+    return pygame.sndarray.make_sound((stereo * 32767).astype(np.int16))
+
 
 hit_sound = make_hit_sound()
 game_music.set_volume(0.4)
-game_music.play(-1)  # Play the game music indefinitely
+game_music.play(-1)    # -1 = loop indefinitely until explicitly stopped
 
+# ---------------------------------------------------------------------------
 # Sprite Groups
-all_sprites = pygame.sprite.Group()
-yarn_sprites = pygame.sprite.Group()
-meow_sprites = pygame.sprite.Group()
-monster_sprites = pygame.sprite.Group()
-powerup_sprites = pygame.sprite.Group()
+# Sprites are stored in multiple groups so we can efficiently iterate over
+# specific subsets (e.g. only monsters, only bullets) for collision checks.
+# ---------------------------------------------------------------------------
+all_sprites    = pygame.sprite.Group()    # Every sprite — used for batch updates and rendering
+yarn_sprites   = pygame.sprite.Group()    # Decorative background elements
+meow_sprites   = pygame.sprite.Group()    # Active player projectiles
+monster_sprites = pygame.sprite.Group()  # All enemies currently on screen
+powerup_sprites = pygame.sprite.Group()  # Collectible power-up orbs
 
-# Player
+# Create the initial player sprite and populate the background.
 cat = Cat(all_sprites)
 
-# Yarn setup
 for _ in range(20):
     Yarn((all_sprites, yarn_sprites), yarn_surf)
 
-# Monster spawn event
+# ---------------------------------------------------------------------------
+# Monster spawn timer
+# A custom Pygame event fires on a repeating timer.  The interval is
+# recalculated after each spawn so difficulty ramps up as time passes
+# (see get_spawn_interval).
+# ---------------------------------------------------------------------------
 MONSTER_SPAWN_EVENT = pygame.USEREVENT + 1
-pygame.time.set_timer(MONSTER_SPAWN_EVENT, 500)
+pygame.time.set_timer(MONSTER_SPAWN_EVENT, 500)   # initial 500 ms between spawns
 
 # Game loop
 while running:
