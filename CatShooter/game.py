@@ -486,37 +486,72 @@ def update_score(base=1):
     multiplier = min(combo, 5)               # hard cap at 5×
     score += base * multiplier
 
+# ---------------------------------------------------------------------------
+# HUD (Heads-Up Display) drawing functions
+# These are called every frame to render player-facing status information
+# directly onto the main display surface, on top of the game world.
+# ---------------------------------------------------------------------------
+
 def display_score():
+    """Render the current score centred near the bottom of the screen."""
     text_surf = font.render(f'Score: {score}', True, (240, 240, 240))
     text_rect = text_surf.get_rect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
     display_surface.blit(text_surf, text_rect)
+    # Decorative rounded rectangle outline drawn around the score label.
     pygame.draw.rect(display_surface, (240, 240, 240), text_rect.inflate(20, 16).move(0, -8), 5, 10)
 
+
 def draw_heart(surface, x, y, size, filled):
+    """
+    Draw a single heart icon at (x, y) using two circles and a triangle.
+
+    Args:
+        surface: the pygame Surface to draw onto.
+        x, y   : top-left corner of the heart's bounding box.
+        size   : pixel width/height of the bounding box.
+        filled : True = bright red (represents a remaining life);
+                 False = dark maroon (represents a lost life).
+    """
     color = (220, 60, 80) if filled else (80, 40, 50)
     r = size // 4
+    # Two circles form the upper lobes of the heart.
     pygame.draw.circle(surface, color, (x + r, y + r), r)
     pygame.draw.circle(surface, color, (x + size - r, y + r), r)
+    # A downward-pointing triangle forms the lower point.
     points = [(x, y + r), (x + size // 2, y + size), (x + size, y + r)]
     pygame.draw.polygon(surface, color, points)
 
+
 def display_lives():
+    """Render three heart icons in the top-left corner representing remaining lives."""
     size = 36
     gap = 10
     for i in range(3):
+        # Hearts 0..lives-1 are filled; remaining hearts are hollow/dark.
         draw_heart(display_surface, 20 + i * (size + gap), 20, size, i < lives)
 
+
 def display_kills():
+    """Render the kill counter in the top-right area of the screen."""
     kills_surf = font.render(f'Kills: {kills}', True, (160, 220, 160))
     display_surface.blit(kills_surf, kills_surf.get_rect(topright=(WINDOW_WIDTH - 20, 60)))
 
+
 def display_combo():
+    """
+    Show the active combo multiplier banner at the top centre of the screen.
+
+    Hidden when combo < 2.  Turns red at maximum (5×) to signal the score
+    ceiling has been reached.
+    """
     if combo >= 2:
         color = (255, 215, 0) if combo < 5 else (255, 80, 80)
         combo_surf = font.render(f'x{min(combo, 5)} COMBO!', True, color)
         display_surface.blit(combo_surf, combo_surf.get_rect(midtop=(WINDOW_WIDTH / 2, 20)))
 
+
 def display_mute():
+    """Show a 'MUTED' indicator in the top-right corner when audio is silenced."""
     if muted:
         mute_surf = font.render('MUTED', True, (180, 180, 180))
         display_surface.blit(mute_surf, mute_surf.get_rect(topright=(WINDOW_WIDTH - 20, 20)))
