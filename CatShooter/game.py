@@ -639,7 +639,24 @@ def draw_game_over():
     hint_surf = font.render('Press R to Restart or Q to Quit', True, (180, 180, 180))
     display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 110)))
 
+# ---------------------------------------------------------------------------
+# Game reset and collision resolution
+# ---------------------------------------------------------------------------
+
 def reset_game():
+    """
+    Restore all game state to initial values and rebuild the scene for a fresh run.
+
+    This is called when the player presses R on the game-over screen.  It:
+        1. Resets all score/life/combo counters.
+        2. Empties every sprite group so old enemies, bullets, etc. are gone.
+        3. Re-populates the background with Yarn sprites.
+        4. Creates and returns a new Cat sprite.
+
+    Returns:
+        Cat: the newly created player sprite, which the caller must assign to
+             the module-level `cat` variable.
+    """
     global score, lives, kills, game_over, game_start_time, combo, combo_timer, rapid_fire_timer
     score = 0
     lives = 3
@@ -649,22 +666,46 @@ def reset_game():
     combo_timer = 0
     rapid_fire_timer = 0
     game_start_time = pygame.time.get_ticks()
+
+    # Purge every sprite group before rebuilding the scene.
     all_sprites.empty()
     meow_sprites.empty()
     monster_sprites.empty()
     yarn_sprites.empty()
     powerup_sprites.empty()
+
     for _ in range(20):
         Yarn((all_sprites, yarn_sprites), yarn_surf)
     return Cat(all_sprites)
 
+
 def collisions():
+    """
+    Resolve all active collisions for the current frame.
+
+    Three collision types are checked in order:
+
+    1. Cat ↔ Monster (pixel-perfect via mask):
+       If the cat is not invincible, any overlapping monster is destroyed and
+       the cat loses a life.  If lives reach zero, the run ends and the high
+       score is saved if beaten.  Screen-shake is triggered on every hit.
+
+    2. Meow ↔ Monster (bounding-rect):
+       When a bullet hits one or more monsters, all overlapping monsters are
+       destroyed, the bullet is removed, score is awarded, the paw animation
+       plays, and a power-up may drop.
+
+    3. Cat ↔ PowerUp:
+       Collecting any power-up orb instantly grants rapid-fire for 5 seconds.
+    """
     global game_over, lives, high_score, shake_timer, rapid_fire_timer
+
+    # --- Cat vs. Monster ---
     if not cat.invincible:
         collision_sprites = pygame.sprite.spritecollide(cat, monster_sprites, True, pygame.sprite.collide_mask)
         if collision_sprites:
             cat.hit()
-            shake_timer = 300
+            shake_timer = 300        # ms of screen-shake to apply
             hit_sound.play()
             lives -= 1
             if lives <= 0:
@@ -673,20 +714,24 @@ def collisions():
                     high_score = score
                     save_high_score(high_score)
 
+    # --- Meow vs. Monster ---
     for meow in meow_sprites:
         collided_sprites = pygame.sprite.spritecollide(meow, monster_sprites, True)
         if collided_sprites:
             meow.kill()
+            # Sum the score_value of every monster hit (FastMonster = 3, Monster = 1).
             base = sum(getattr(m, 'score_value', 1) for m in collided_sprites)
             update_score(base)
             AnimatedPaw(paw_frames, meow.rect.midtop, all_sprites)
             paw_sound.play()
+            # 1-in-5 chance to drop a power-up at the kill location.
             if randint(1, 5) == 1:
                 PowerUp(meow.rect.midtop, (all_sprites, powerup_sprites))
 
+    # --- Cat vs. PowerUp ---
     picked = pygame.sprite.spritecollide(cat, powerup_sprites, True)
     if picked:
-        cat.cooldown_duration = 100
+        cat.cooldown_duration = 100        # 100 ms cooldown = ~10 shots/second
         rapid_fire_timer = pygame.time.get_ticks()
             
 # General setup
