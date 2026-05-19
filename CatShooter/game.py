@@ -825,71 +825,125 @@ for _ in range(20):
 MONSTER_SPAWN_EVENT = pygame.USEREVENT + 1
 pygame.time.set_timer(MONSTER_SPAWN_EVENT, 500)   # initial 500 ms between spawns
 
-# Game loop
+# ===========================================================================
+# Main game loop
+# Runs continuously at up to 60 FPS until `running` is set to False.
+#
+# Each iteration follows this order:
+#   1. Cap frame rate and compute delta time (dt).
+#   2. Process input events (keyboard, window close, spawn timer).
+#   3. Tick time-limited state machines (combo expiry, rapid-fire expiry).
+#   4. Update sprite positions and resolve collisions (gameplay only).
+#   5. Render the full frame to the display surface.
+# ===========================================================================
+
 while running:
+    # clock.tick(60) caps the loop to 60 FPS and returns how many ms elapsed
+    # since the last call.  Dividing by 1000 converts to seconds for physics math.
     dt = clock.tick(60) / 1000
 
+    # -----------------------------------------------------------------------
+    # Event handling
+    # -----------------------------------------------------------------------
     for event in pygame.event.get():
+
         if event.type == QUIT:
             running = False
+
+        # M key — toggle audio mute globally.
         if event.type == KEYDOWN and event.key == pygame.K_m:
             muted = not muted
             pygame.mixer.pause() if muted else pygame.mixer.unpause()
+
+        # Start screen — only SPACE (play) and D (cycle difficulty) are active here.
         if on_start_screen:
             if event.type == KEYDOWN and event.key == pygame.K_SPACE:
                 on_start_screen = False
-                game_start_time = pygame.time.get_ticks()
+                game_start_time = pygame.time.get_ticks()   # begin the spawn ramp timer
             if event.type == KEYDOWN and event.key == pygame.K_d:
-                diff_list = list(DIFFICULTY_SETTINGS.keys())
+                diff_list  = list(DIFFICULTY_SETTINGS.keys())
                 difficulty = diff_list[(diff_list.index(difficulty) + 1) % len(diff_list)]
+
+        # P key — pause / unpause mid-game.
         if event.type == KEYDOWN and event.key == pygame.K_p and not game_over and not on_start_screen:
             paused = not paused
+
         if not game_over and not paused and not on_start_screen:
+            # Custom timer event fires when a new monster should spawn.
             if event.type == MONSTER_SPAWN_EVENT:
                 elapsed = (pygame.time.get_ticks() - game_start_time) / 1000
-                pos = (randint(50, WINDOW_WIDTH - 50), -50)
+                pos = (randint(50, WINDOW_WIDTH - 50), -50)   # spawn above the visible area
+                # After 30 seconds a 1-in-4 chance produces a faster, red FastMonster.
                 if elapsed > 30 and randint(1, 4) == 1:
                     FastMonster(monster_surf, pos, (all_sprites, monster_sprites))
                 else:
                     Monster(monster_surf, pos, (all_sprites, monster_sprites))
+                # Recalculate the next spawn delay so the game speeds up over time.
                 pygame.time.set_timer(MONSTER_SPAWN_EVENT, get_spawn_interval())
         else:
+            # R / Q are only active when gameplay is suspended (paused or game over).
             keys = pygame.key.get_pressed()
             if keys[pygame.K_r]:
                 cat = reset_game()
             if keys[pygame.K_q]:
                 running = False
 
+    # -----------------------------------------------------------------------
+    # Time-limited state expiry
+    # -----------------------------------------------------------------------
+
+    # Reset the combo multiplier if the player hasn't killed anything recently.
     if combo > 0 and pygame.time.get_ticks() - combo_timer > COMBO_WINDOW:
         combo = 0
 
+    # Expire the rapid-fire power-up after 5 seconds and restore normal cooldown.
     if rapid_fire_timer > 0 and pygame.time.get_ticks() - rapid_fire_timer > 5000:
         cat.cooldown_duration = 400
         rapid_fire_timer = 0
 
+    # -----------------------------------------------------------------------
+    # Game world update (skipped while paused, on the start screen, or game over)
+    # -----------------------------------------------------------------------
     if not game_over and not paused and not on_start_screen:
-        all_sprites.update(dt)
+        all_sprites.update(dt)   # calls update(dt) on every sprite in the group
         collisions()
 
+    # -----------------------------------------------------------------------
+    # Screen-shake offset calculation
+    # The entire game world is drawn on an intermediate surface that is then
+    # blitted to the display at a small random offset while shake_timer > 0.
+    # -----------------------------------------------------------------------
     if shake_timer > 0:
         shake_timer = max(0, shake_timer - dt * 1000)
         shake_x = randint(-8, 8)
         shake_y = randint(-8, 8)
     else:
-        shake_x = shake_y = 0
+        shake_x = shake_y = 0   # No shake — draw at the origin
 
+    # -----------------------------------------------------------------------
+    # Rendering — order matters: background → world → HUD → overlays
+    # -----------------------------------------------------------------------
+
+    # Fill the real display with the background colour first (clears last frame).
     display_surface.fill((30, 30, 30))
+
+    # Draw every sprite onto an intermediate surface so the whole world can be
+    # shifted together as a single blit when screen-shake is active.
     game_surf = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
     game_surf.fill((30, 30, 30))
     for sprite in all_sprites:
         game_surf.blit(sprite.image, sprite.rect)
     display_surface.blit(game_surf, (shake_x, shake_y))
+
+    # HUD elements are drawn directly on the display surface (not game_surf) so
+    # they stay perfectly still even while the world is shaking.
     display_score()
     display_lives()
     display_kills()
     display_combo()
     display_mute()
 
+    # Full-screen overlays are drawn last so they sit on top of everything.
     if on_start_screen:
         draw_start_screen()
     elif paused:
@@ -897,6 +951,8 @@ while running:
     elif game_over:
         draw_game_over()
 
+    # Push the completed frame to the monitor.
     pygame.display.update()
 
+# Shut down Pygame cleanly after the loop exits (window close or Q pressed).
 pygame.quit()
