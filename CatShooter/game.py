@@ -556,51 +556,88 @@ def display_mute():
         mute_surf = font.render('MUTED', True, (180, 180, 180))
         display_surface.blit(mute_surf, mute_surf.get_rect(topright=(WINDOW_WIDTH - 20, 20)))
 
+# ---------------------------------------------------------------------------
+# Full-screen overlay drawing functions
+# Each of these renders a semi-transparent panel over the game world for the
+# three non-gameplay states: start screen, pause, and game over.
+# ---------------------------------------------------------------------------
+
 def draw_start_screen():
+    """
+    Draw the title / main-menu overlay shown before the first play-through.
+
+    Displays:
+        - Game title
+        - All-time high score
+        - Current difficulty selection (colour-coded) with the D key hint
+        - SPACE to start, M/P key hints
+    The overlay is semi-transparent so the animated background is visible
+    underneath, giving the menu a sense of depth.
+    """
+    # Dark semi-transparent backdrop over the game world.
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 180))
     display_surface.blit(overlay, (0, 0))
+
     title_surf = font.render('MEOW-NSTER SHOOTER', True, (255, 160, 80))
     display_surface.blit(title_surf, title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 100)))
+
     hs_surf = font.render(f'Best Score: {high_score}', True, (255, 215, 0))
     display_surface.blit(hs_surf, hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 30)))
+
+    # Difficulty label colour changes to give immediate visual feedback on selection.
     diff_color = {'Easy': (80, 220, 80), 'Normal': (240, 240, 80), 'Hard': (255, 80, 80)}[difficulty]
     diff_surf = font.render(f'Difficulty: {difficulty}  (D to change)', True, diff_color)
     display_surface.blit(diff_surf, diff_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 40)))
+
     hint_surf = font.render('Press SPACE to Play', True, (200, 200, 200))
     display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 110)))
+
     mute_hint = font.render('M = Mute   P = Pause', True, (140, 140, 140))
     display_surface.blit(mute_hint, mute_hint.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 160)))
 
+
 def draw_paused():
+    """
+    Draw the pause overlay when the player presses P mid-game.
+
+    Uses a lighter overlay (alpha 120 vs 160/180) so the frozen game world
+    remains clearly visible, signalling that the action is merely suspended.
+    """
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 120))
     display_surface.blit(overlay, (0, 0))
+
     pause_surf = font.render('PAUSED', True, (240, 240, 240))
     display_surface.blit(pause_surf, pause_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)))
+
     hint_surf = font.render('Press P to Resume', True, (180, 180, 180))
     display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 60)))
 
+
 def draw_game_over():
+    """
+    Draw the game-over overlay when the player loses all lives.
+
+    Shows the final score, the all-time high score (updated in collisions()
+    before this is called), and prompts to restart (R) or quit (Q).
+    """
     overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 160))
     display_surface.blit(overlay, (0, 0))
 
     title_surf = font.render('GAME OVER', True, (255, 80, 80))
-    title_rect = title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 60))
-    display_surface.blit(title_surf, title_rect)
+    display_surface.blit(title_surf, title_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 60)))
 
     score_surf = font.render(f'Score: {score}', True, (240, 240, 240))
-    score_rect = score_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
-    display_surface.blit(score_surf, score_rect)
+    display_surface.blit(score_surf, score_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)))
 
+    # Gold colour for the high score row makes it stand out from the white final score.
     hs_surf = font.render(f'Best: {high_score}', True, (255, 215, 0))
-    hs_rect = hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50))
-    display_surface.blit(hs_surf, hs_rect)
+    display_surface.blit(hs_surf, hs_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 50)))
 
     hint_surf = font.render('Press R to Restart or Q to Quit', True, (180, 180, 180))
-    hint_rect = hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 110))
-    display_surface.blit(hint_surf, hint_rect)
+    display_surface.blit(hint_surf, hint_surf.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 110)))
 
 def reset_game():
     global score, lives, kills, game_over, game_start_time, combo, combo_timer, rapid_fire_timer
